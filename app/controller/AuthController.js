@@ -6,8 +6,8 @@ const regSchema = Joi.object({
   username: Joi.string().min(3).max(30).required(),
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
-  fullName: Joi.string().max(100).optional(),
-  phone: Joi.string().optional(),
+  fullName: Joi.string().allow('').max(100).optional(),
+  phone: Joi.string().allow('').optional(),
 });
 
 const logSchema = Joi.object({
@@ -146,7 +146,8 @@ class AuthController {
         if (err) {
           return res.redirect('/user/dashboard');
         }
-        req.flash('success', 'Logged out successfully');
+        // Note: Cannot use req.flash() after session.destroy()
+        // Flash middleware requires an active session
         res.redirect('/');
       });
     } catch (err) {
