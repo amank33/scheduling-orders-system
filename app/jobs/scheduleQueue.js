@@ -4,7 +4,6 @@ const OrderExecution = require('../model/orderExecution');
 const ScheduledOrder = require('../model/scheduledOrder');
 const { notifyOrderExecution } = require('../helper/emailNotification');
 
-// initialize job queue for processing scheduled orders
 const job_queue = new Queue('scheduled-orders', {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
@@ -28,7 +27,6 @@ job_queue.on('ready', () => {
   console.log('Job queue connected');
 });
 
-// process scheduled order jobs
 job_queue.process(async (job) => {
   try {
     console.log(`Processing: ${job.id}`);
@@ -106,15 +104,14 @@ job_queue.process(async (job) => {
   }
 });
 
-jobQueue.on('completed', (job) => {
+job_queue.on('completed', (job) => {
   console.log(`Done: ${job.id}`);
 });
 
-jobQueue.on('failed', (job, err) => {
+job_queue.on('failed', (job, err) => {
   console.log(`Job failed: ${job.id}`);
 });
 
-// calculate next execution time based on recurrence
 const calculateNextRun = (order) => {
   const current = new Date(order.lastExecutedAt || order.scheduledTime);
   let nextRun = new Date(current);
@@ -136,7 +133,7 @@ const calculateNextRun = (order) => {
 
 const startQueue = async () => {
   try {
-    await jobQueue.clean(0, 'wait');
+    await job_queue.clean(0, 'wait');
     console.log('Job queue initialized');
 
     const activeOrders = await ScheduledOrder.find({ status: 'active' });
@@ -144,7 +141,7 @@ const startQueue = async () => {
       const nextRun = order.nextExecutionAt || order.scheduledTime;
       if (nextRun && new Date(nextRun) > new Date()) {
         const waitTime = new Date(nextRun) - new Date();
-        await jobQueue.add(
+        await job_queue.add(
           { scheduledOrderId: order._id, userId: order.userId },
           {
             delay: Math.max(0, waitTime),
@@ -169,7 +166,7 @@ const scheduleOrderJob = async (order) => {
     const waitTime = new Date(order.scheduledTime) - new Date();
     console.log(`Schedule: ${order._id} in ${waitTime}ms`);
 
-    await jobQueue.add(
+    await job_queue.add(
       { scheduledOrderId: order._id, userId: order.userId },
       {
         delay: Math.max(0, waitTime),
@@ -192,8 +189,8 @@ const scheduleOrderJob = async (order) => {
 
 const cancelJob = async (orderId) => {
   try {
-    const jobs = await jobQueue.getJobs('wait');
-    const job = jobs_list.find(x => x.data.scheduledOrderId.toString() === orderId.toString());
+    const jobs = await job_queue.getJobs('wait');
+    const job = jobs.find(x => x.data.scheduledOrderId.toString() === orderId.toString());
     
     if (job) {
       await job.remove();
@@ -205,7 +202,7 @@ const cancelJob = async (orderId) => {
 };
 
 module.exports = {
-  jobQueue,
+  job_queue,
   initQueue: startQueue,
   scheduleOrderJob,
   cancelJob,

@@ -6,11 +6,9 @@ require('dotenv').config();
 
 const app = express();
 
-// connect to mongodb
 const dbCon = require('./app/config/db');
 dbCon();
 
-// initialize bull job queue
 const { initQueue } = require('./app/jobs/scheduleQueue');
 initQueue();
 
@@ -22,7 +20,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// session setup
 app.use(session({ 
   secret: process.env.SESSION_SECRET || 'secret123', 
   resave: false, 
@@ -31,7 +28,6 @@ app.use(session({
 
 app.use(flash());
 
-// middleware to pass messages  
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash('success');
   res.locals.error_msg = req.flash('error');

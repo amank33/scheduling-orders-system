@@ -3,14 +3,12 @@ const ScheduledOrder = require('../model/scheduledOrder');
 const OrderExecution = require('../model/orderExecution');
 
 class AdminController {
-  // main admin dashboard with stats
   async adminDashboard(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
       }
 
-      // get all the counts lol
       const totalUsers = await User.countDocuments();
       const total_orders = await ScheduledOrder.countDocuments();
       const totalExec = await OrderExecution.countDocuments();
@@ -40,7 +38,6 @@ class AdminController {
     }
   }
 
-  // view all scheduled orders
   async viewOrders(req, res) {
     try {
       if (!req.session.user) {
@@ -59,7 +56,6 @@ class AdminController {
     }
   }
 
-  // view all order executions with pagination
   async viewExecutions(req, res) {
     try {
       if (!req.session.user) {
@@ -92,7 +88,8 @@ class AdminController {
       res.redirect('/admin/dashboard');
     }
   }
-  // view all registered users  async viewUsers(req, res) {
+
+  async viewUsers(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');

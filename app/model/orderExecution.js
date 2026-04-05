@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// order execution schema - tracks each time an order runs
 const executionSchema = new Schema(
   {
     scheduledOrderId: {

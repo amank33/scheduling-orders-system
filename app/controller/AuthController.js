@@ -1,7 +1,6 @@
 const User = require('../model/user');
 const Joi = require('joi');
 
-// registration validation schema
 const regSchema = Joi.object({
   username: Joi.string().min(3).max(30).required(),
   email: Joi.string().email().required(),
@@ -10,14 +9,12 @@ const regSchema = Joi.object({
   phone: Joi.string().allow('').optional(),
 });
 
-// login validation schema
 const logSchema = Joi.object({
   username: Joi.string().required(),
   password: Joi.string().required(),
 });
 
 class AuthController {
-  // show login page
   async displayLogin(req, res) {
     try {
       res.render('auth/login', { errors: null });
@@ -28,7 +25,6 @@ class AuthController {
     }
   }
 
-  // handle user login
   async loginUser(req, res) {
     try {
       const { username, password } = req.body;
@@ -42,7 +38,6 @@ class AuthController {
         return res.render('auth/login', { errors: errs });
       }
 
-      // find user by username or email
       const usr = await User.findOne({ 
         $or: [{ username }, { email: username }] 
       });
@@ -76,7 +71,6 @@ class AuthController {
     }
   }
 
-  // show registration page
   async displayRegister(req, res) {
     try {
       res.render('auth/register', { errors: null, old: {} });
@@ -87,7 +81,6 @@ class AuthController {
     }
   }
 
-  // handle user registration
   async registerUser(req, res) {
     try {
       const { username, email, password, fullName, phone } = req.body;
@@ -101,7 +94,6 @@ class AuthController {
         return res.render('auth/register', { errors: validateErrs, old: req.body });
       }
 
-      // check if user already exists
       const existUser = await User.findOne({ 
         $or: [{ username }, { email }] 
       });
@@ -142,14 +134,12 @@ class AuthController {
     }
   }
 
-  // logout user
   async logoutUser(req, res) {
     try {
       req.session.destroy((err) => {
         if (err) {
           return res.redirect('/user/dashboard');
         }
-        // user logged out
         res.redirect('/');
       });
     } catch (err) {

@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// scheduled order schema - stores recurring orders
 const scheduledOrderSchema = new Schema(
   {
     userId: {

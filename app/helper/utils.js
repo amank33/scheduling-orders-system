@@ -1,16 +1,13 @@
-// simple utility functions
+// simple helpers
 
-// format date for display
 const formatDate = (date) => {
   return new Date(date).toLocaleString();
 };
 
-// check if order is overdue
 const isOverdue = (scheduledTime) => {
   return new Date(scheduledTime) < new Date();
 };
 
-// get status badge color
 const getStatusColor = (status) => {
   switch(status) {
     case 'active':
@@ -26,7 +23,6 @@ const getStatusColor = (status) => {
   }
 };
 
-// calculate days until next execution
 const daysUntil = (futureDate) => {
   const now = new Date();
   const target = new Date(futureDate);

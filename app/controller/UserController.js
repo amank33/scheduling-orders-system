@@ -5,7 +5,6 @@ const Joi = require('joi');
 const { scheduleOrderJob, cancelJob, calculateNextExecution } = require('../jobs/scheduleQueue');
 const { sendConfirmation } = require('../helper/emailNotification');
 
-// validation schema for orders
 const orderValidation = Joi.object({
   productName: Joi.string().max(100).optional(),
   quantity: Joi.number().min(1).required(),
@@ -16,7 +15,6 @@ const orderValidation = Joi.object({
 });
 
 class UserController {
-  // show user dashboard with all orders and stats
   async userDashboard(req, res) {
     try {
       if (!req.session.user) {
@@ -39,7 +37,6 @@ class UserController {
     }
   }
 
-  // display form to create new order
   async displayAddForm(req, res) {
     try {
       if (!req.session.user) {
@@ -54,7 +51,6 @@ class UserController {
     }
   }
 
-  // create new scheduled order
   async addOrder(req, res) {
     try {
       if (!req.session.user) {
@@ -82,7 +78,6 @@ class UserController {
 
       const { productName, quantity, description, scheduledTime, recurrenceType, notes } = req.body;
 
-      // create new order in db
       const new_order = await ScheduledOrder.create({
         userId: req.session.user.id,
         productName: productName || 'Standard Item',
@@ -113,7 +108,8 @@ class UserController {
       res.redirect('/user/orders/add');
     }
   }
-  // list all user orders  async listOrders(req, res) {
+
+  async listOrders(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
@@ -154,7 +150,6 @@ class UserController {
     }
   }
 
-  // update existing order
   async editOrder(req, res) {
     try {
       if (!req.session.user) {
@@ -184,7 +179,6 @@ class UserController {
 
       const { productName, quantity, description, scheduledTime, recurrenceType, notes } = req.body;
 
-      // update order fields
       ordr.productName = productName || ordr.productName;
       ordr.quantity = parseInt(quantity);
       ordr.description = description;
@@ -239,7 +233,8 @@ const found_order = await ScheduledOrder.findOne({
       res.redirect('/user/orders/list');
     }
   }
-  // pause order execution  async pauseJob(req, res) {
+
+  async pauseJob(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
@@ -257,7 +252,7 @@ const found_order = await ScheduledOrder.findOne({
 
       paused_order.status = 'paused';
       await paused_order.save();
-      await cancelJob(o._id);
+      await cancelJob(paused_order._id);
 
       req.flash('success', 'Order paused');
       res.redirect('/user/orders/list');
@@ -268,7 +263,8 @@ const found_order = await ScheduledOrder.findOne({
       res.redirect('/user/orders/list');
     }
   }
-  // resume paused order  async startJob(req, res) {
+
+  async startJob(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
@@ -303,7 +299,8 @@ const found_order = await ScheduledOrder.findOne({
       res.redirect('/user/orders/list');
     }
   }
-  // cancel/delete an order  async getHistory(req, res) {
+
+  async getHistory(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');

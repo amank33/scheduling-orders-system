@@ -4,7 +4,6 @@ const BASE_URL = 'http://localhost:4007';
 let testsPassed = 0;
 let testsFailed = 0;
 
-// Helper function for making requests
 function makeRequest(path, method = 'GET', data = null) {
   return new Promise((resolve) => {
     const url = new URL(BASE_URL + path);
@@ -39,35 +38,35 @@ function makeRequest(path, method = 'GET', data = null) {
 }
 
 async function runTests() {
-  console.log('🧪 Testing Scheduling Orders System API\n');
+  console.log('Testing Scheduling Orders System API\n');
 
   // Test 1: Home Page
   let status = await makeRequest('/');
   if (status === 200) {
-    console.log('✅ GET / - Home page');
+    console.log('[PASS] GET / - Home page');
     testsPassed++;
   } else {
-    console.log('❌ GET / - Home page (Status: ' + status + ')');
+    console.log('[FAIL] GET / - Home page (Status: ' + status + ')');
     testsFailed++;
   }
 
   // Test 2: Login Page
   status = await makeRequest('/auth/login');
   if (status === 200) {
-    console.log('✅ GET /auth/login - Login page');
+    console.log('[PASS] GET /auth/login - Login page');
     testsPassed++;
   } else {
-    console.log('❌ GET /auth/login (Status: ' + status + ')');
+    console.log('[FAIL] GET /auth/login (Status: ' + status + ')');
     testsFailed++;
   }
 
   // Test 3: Register Page
   status = await makeRequest('/auth/register');
   if (status === 200) {
-    console.log('✅ GET /auth/register - Register page');
+    console.log('[PASS] GET /auth/register - Register page');
     testsPassed++;
   } else {
-    console.log('❌ GET /auth/register (Status: ' + status + ')');
+    console.log('[FAIL] GET /auth/register (Status: ' + status + ')');
     testsFailed++;
   }
 
@@ -80,10 +79,10 @@ async function runTests() {
     phone: '9999999999'
   });
   if (status === 302 || status === 200) {
-    console.log('✅ POST /auth/register - Create user (Status: ' + status + ')');
+    console.log('[PASS] POST /auth/register - Create user (Status: ' + status + ')');
     testsPassed++;
   } else {
-    console.log('❌ POST /auth/register (Status: ' + status + ')');
+    console.log('[FAIL] POST /auth/register (Status: ' + status + ')');
     testsFailed++;
   }
 
@@ -93,32 +92,32 @@ async function runTests() {
     password: 'testpass123'
   });
   if (status === 302 || status === 200) {
-    console.log('✅ POST /auth/login - Login user (Status: ' + status + ')');
+    console.log('[PASS] POST /auth/login - Login user (Status: ' + status + ')');
     testsPassed++;
   } else {
-    console.log('❌ POST /auth/login (Status: ' + status + ')');
+    console.log('[FAIL] POST /auth/login (Status: ' + status + ')');
     testsFailed++;
   }
 
   // Test 6: Admin Dashboard (should redirect if not logged in)
   status = await makeRequest('/admin/dashboard');
   if (status) {
-    console.log('✅ GET /admin/dashboard - Admin panel (Status: ' + status + ')');
+    console.log('[PASS] GET /admin/dashboard - Admin panel (Status: ' + status + ')');
     testsPassed++;
   } else {
-    console.log('❌ GET /admin/dashboard (Status: ' + status + ')');
+    console.log('[FAIL] GET /admin/dashboard (Status: ' + status + ')');
     testsFailed++;
   }
 
-  console.log('\n📊 Test Results:');
+  console.log('\nTest Results:');
   console.log('Passed: ' + testsPassed);
   console.log('Failed: ' + testsFailed);
   console.log('\n');
 
   if (testsFailed === 0) {
-    console.log('🎉 All tests passed!');
+    console.log('All tests passed!');
   } else {
-    console.log('⚠️  ' + testsFailed + ' test(s) failed');
+    console.log('[WARNING] ' + testsFailed + ' test(s) failed');
   }
 
   process.exit(testsFailed > 0 ? 1 : 0);

@@ -17,7 +17,6 @@ const setupMail = () => {
   return mailerInstance;
 };
 
-// send email notification when order executes
 const notifyOrderExecution = async (user_id, order_obj, exec) => {
   try {
     const smtp_serv = setupMail();
@@ -52,7 +51,6 @@ const notifyOrderExecution = async (user_id, order_obj, exec) => {
   }
 };
 
-// confirmation email when order is scheduled
 const sendConfirmation = async (emailAddr, schOrdr) => {
   try {
     const ml = setupMail();
