@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// Schema for scheduled orders
-const schOrderSchema = new Schema(
+// scheduled order schema - stores recurring orders
+const scheduledOrderSchema = new Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
@@ -63,4 +63,4 @@ const schOrderSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('ScheduledOrder', schOrderSchema);
+module.exports = mongoose.model('ScheduledOrder', scheduledOrderSchema);

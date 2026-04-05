@@ -1,14 +1,16 @@
 class HomeController {
+  // display home page
   async displayHome(req, res) {
     try {
-      const usr = req.session.user;
-      if (usr) {
+      const current_user = req.session.user;
+      if (current_user) {
         return res.redirect('/user/dashboard');
       }
+      // show home page
       res.render('index');
-    } catch (e) {
-      console.log('error:', e);
-      req.flash('error', 'Home page error');
+    } catch (err) {
+      console.log('homepage error:', err);
+      req.flash('error', 'Error on homepage');
       res.render('index');
     }
   }

@@ -1,7 +1,7 @@
 const User = require('../model/user');
 const Joi = require('joi');
 
-// validation schemas
+// registration validation schema
 const regSchema = Joi.object({
   username: Joi.string().min(3).max(30).required(),
   email: Joi.string().email().required(),
@@ -10,12 +10,14 @@ const regSchema = Joi.object({
   phone: Joi.string().allow('').optional(),
 });
 
+// login validation schema
 const logSchema = Joi.object({
   username: Joi.string().required(),
   password: Joi.string().required(),
 });
 
 class AuthController {
+  // show login page
   async displayLogin(req, res) {
     try {
       res.render('auth/login', { errors: null });
@@ -26,6 +28,7 @@ class AuthController {
     }
   }
 
+  // handle user login
   async loginUser(req, res) {
     try {
       const { username, password } = req.body;
@@ -33,30 +36,29 @@ class AuthController {
 
       if (error) {
         const errs = {};
-        error.details.forEach(err => {
-          errs[err.context.key] = err.message;
+        error.details.forEach(e => {
+          errs[e.context.key] = e.message;
         });
         return res.render('auth/login', { errors: errs });
       }
 
-      // find user
+      // find user by username or email
       const usr = await User.findOne({ 
         $or: [{ username }, { email: username }] 
       });
 
       if (!usr || usr.password !== password) {
         return res.render('auth/login', { 
-          errors: { password: 'Wrong credentials' }
+          errors: { password: 'Wrong Credentials' }
         });
       }
 
       if (!usr.isActive) {
         return res.render('auth/login', { 
-          errors: { username: 'Account disabled' }
+          errors: { username: 'Account is disabled' }
         });
       }
 
-      // login ok
       req.session.user = {
         id: usr._id,
         username: usr.username,
@@ -64,7 +66,7 @@ class AuthController {
         fullName: usr.fullName,
       };
 
-      req.flash('success', `Welcome ${usr.username}!`);
+      req.flash('success', `Welcome back ${usr.username}!`);
       res.redirect('/user/dashboard');
 
     } catch (err) {
@@ -74,6 +76,7 @@ class AuthController {
     }
   }
 
+  // show registration page
   async displayRegister(req, res) {
     try {
       res.render('auth/register', { errors: null, old: {} });
@@ -84,36 +87,36 @@ class AuthController {
     }
   }
 
+  // handle user registration
   async registerUser(req, res) {
     try {
       const { username, email, password, fullName, phone } = req.body;
       const { error } = regSchema.validate(req.body, { abortEarly: false });
 
       if (error) {
-        const errs = {};
+        const validateErrs = {};
         error.details.forEach(err => {
-          errs[err.context.key] = err.message;
+          validateErrs[err.context.key] = err.message;
         });
-        return res.render('auth/register', { errors: errs, old: req.body });
+        return res.render('auth/register', { errors: validateErrs, old: req.body });
       }
 
-      // check existing user
-      const exstg = await User.findOne({ 
+      // check if user already exists
+      const existUser = await User.findOne({ 
         $or: [{ username }, { email }] 
       });
 
-      if (exstg) {
-        const errs = {};
-        if (exstg.username === username) {
-          errs.username = 'username taken';
+      if (existUser) {
+        const dupErr = {};
+        if (existUser.username === username) {
+          dupErr.username = 'Username already taken';
         }
-        if (exstg.email === email) {
-          errs.email = 'Email already used';
+        if (existUser.email === email) {
+          dupErr.email = 'Email already in use';
         }
-        return res.render('auth/register', { errors: errs, old: req.body });
+        return res.render('auth/register', { errors: dupErr, old: req.body });
       }
 
-      // create user
       const newUsr = await User.create({
         username,
         email,
@@ -122,7 +125,6 @@ class AuthController {
         phone: phone || '',
       });
 
-      // auto login
       req.session.user = {
         id: newUsr._id,
         username: newUsr.username,
@@ -130,7 +132,7 @@ class AuthController {
         fullName: newUsr.fullName,
       };
 
-      req.flash('success', 'Account created!');
+      req.flash('success', 'Username created successfully');
       res.redirect('/user/dashboard');
 
     } catch (err) {
@@ -140,18 +142,18 @@ class AuthController {
     }
   }
 
+  // logout user
   async logoutUser(req, res) {
     try {
       req.session.destroy((err) => {
         if (err) {
           return res.redirect('/user/dashboard');
         }
-        // Note: Cannot use req.flash() after session.destroy()
-        // Flash middleware requires an active session
+        // user logged out
         res.redirect('/');
       });
     } catch (err) {
-      console.log(err);
+      console.log('logout error:', err);
       res.redirect('/');
     }
   }

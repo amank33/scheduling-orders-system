@@ -4,8 +4,8 @@ const OrderExecution = require('../model/orderExecution');
 const ScheduledOrder = require('../model/scheduledOrder');
 const { notifyOrderExecution } = require('../helper/emailNotification');
 
-// Create job queue
-const jobQueue = new Queue('scheduled-orders', {
+// initialize job queue for processing scheduled orders
+const job_queue = new Queue('scheduled-orders', {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: process.env.REDIS_PORT || 6379,
@@ -20,77 +20,73 @@ const jobQueue = new Queue('scheduled-orders', {
   }
 });
 
-// Handle Redis connection errors gracefully
-jobQueue.on('error', (err) => {
-  console.warn('⚠️  Redis Connection Warning:', err.message.substring(0, 100));
+job_queue.on('error', (err) => {
+  console.warn('Redis issue:', err.message.substring(0, 100));
 });
 
-jobQueue.on('ready', () => {
-  console.log('✅ Job Queue connected to Redis');
+job_queue.on('ready', () => {
+  console.log('Job queue connected');
 });
 
-jobQueue.process(async (job) => {
+// process scheduled order jobs
+job_queue.process(async (job) => {
   try {
-    console.log(`Processing job: ${job.id}`);
+    console.log(`Processing: ${job.id}`);
     
     const { scheduledOrderId, userId } = job.data;
 
-    const ordr = await ScheduledOrder.findById(scheduledOrderId);
-    if (!ordr) {
+    const order = await ScheduledOrder.findById(scheduledOrderId);
+    if (!order) {
       throw new Error('Order not found');
     }
 
-    // simulate execution
-    const exDetails = {
+    const executionDetails = {
       orderId: `ORD-${Date.now()}`,
       amount: 99.99,
-      items: ordr.quantity,
+      items: order.quantity,
       externalRef: `EXT-${scheduledOrderId}`,
     };
 
-    // create execution record
-    const exec = await OrderExecution.create({
+    const execution = await OrderExecution.create({
       scheduledOrderId,
       userId,
       status: 'success',
       executedAt: new Date(),
-      executionDetails: exDetails,
+      executionDetails,
       retryCount: job.attemptsMade,
       logs: `Executed at ${new Date().toISOString()}`,
     });
 
-    // update order
-    ordr.totalExecutions += 1;
-    ordr.lastExecutedAt = new Date();
+    order.totalExecutions += 1;
+    order.lastExecutedAt = new Date();
     
-    if (ordr.recurrenceType === 'once') {
-      ordr.status = 'completed';
+    if (order.recurrenceType === 'once') {
+      order.status = 'completed';
     } else {
-      ordr.nextExecutionAt = computeNextRun(ordr);
+      order.nextExecutionAt = calculateNextRun(order);
     }
 
-    await ordr.save();
+    await order.save();
 
-    // send notification
     try {
-      await notifyOrderExecution(userId, ordr, exec);
-      exec.notificationSent = true;
-      exec.notificationStatus = 'sent';
+      await notifyOrderExecution(userId, order, execution);
+      execution.notificationSent = true;
+      execution.notificationStatus = 'sent';
     } catch (err) {
       console.log('error sending notification:', err.message);
-      exec.notificationStatus = 'failed';
+      execution.notificationStatus = 'failed';
     }
     
-    await exec.save();
+    await execution.save();
 
-    console.log(`Job completed: ${exec._id}`);
-    return { success: true, executionId: exec._id };
+    console.log(`Job completed: ${execution._id}`);
+    return { success: true, executionId: execution._id };
 
   } catch (error) {
     console.error(`Job failed: ${job.id}`, error.message);
     
     const { scheduledOrderId, userId } = job.data;
-    const failExec = await OrderExecution.create({
+    const failedExecution = await OrderExecution.create({
       scheduledOrderId,
       userId,
       status: job.attemptsMade >= 3 ? 'failed' : 'retry',
@@ -100,10 +96,10 @@ jobQueue.process(async (job) => {
       logs: `Failed: ${error.message}`,
     });
 
-    const ord = await ScheduledOrder.findById(scheduledOrderId);
-    if (ord) {
-      ord.failedExecutions += 1;
-      await ord.save();
+    const order = await ScheduledOrder.findById(scheduledOrderId);
+    if (order) {
+      order.failedExecutions += 1;
+      await order.save();
     }
 
     throw error;
@@ -111,46 +107,45 @@ jobQueue.process(async (job) => {
 });
 
 jobQueue.on('completed', (job) => {
-  console.log(`Completed: ${job.id}`);
+  console.log(`Done: ${job.id}`);
 });
 
 jobQueue.on('failed', (job, err) => {
   console.log(`Job failed: ${job.id}`);
 });
 
-const calcNextRun = (ordr) => {
-  const cur = new Date(ordr.lastExecutedAt || ordr.scheduledTime);
-  let nxt = new Date(cur);
+// calculate next execution time based on recurrence
+const calculateNextRun = (order) => {
+  const current = new Date(order.lastExecutedAt || order.scheduledTime);
+  let nextRun = new Date(current);
 
-  if (ordr.recurrenceType === 'daily') {
-    nxt.setDate(nxt.getDate() + 1);
-  } else if (ordr.recurrenceType === 'weekly') {
-    nxt.setDate(nxt.getDate() + 7);
-  } else if (ordr.recurrenceType === 'monthly') {
-    nxt.setMonth(nxt.getMonth() + 1);
+  if (order.recurrenceType === 'daily') {
+    nextRun.setDate(nextRun.getDate() + 1);
+  } else if (order.recurrenceType === 'weekly') {
+    nextRun.setDate(nextRun.getDate() + 7);
+  } else if (order.recurrenceType === 'monthly') {
+    nextRun.setMonth(nextRun.getMonth() + 1);
   }
 
-  if (ordr.recurrencePattern && ordr.recurrencePattern.endDate && nxt > new Date(ordr.recurrencePattern.endDate)) {
+  if (order.recurrencePattern && order.recurrencePattern.endDate && nextRun > new Date(order.recurrencePattern.endDate)) {
     return null;
   }
 
-  return nxt;
+  return nextRun;
 };
 
 const startQueue = async () => {
   try {
-    // clear old jobs
     await jobQueue.clean(0, 'wait');
     console.log('Job queue initialized');
 
-    // reschedule from db
-    const acts = await ScheduledOrder.find({ status: 'active' });
-    for (const o of acts) {
-      const nxtRun = o.nextExecutionAt || o.scheduledTime;
-      if (nxtRun && new Date(nxtRun) > new Date()) {
-        const waitTime = new Date(nxtRun) - new Date();
+    const activeOrders = await ScheduledOrder.find({ status: 'active' });
+    for (const order of activeOrders) {
+      const nextRun = order.nextExecutionAt || order.scheduledTime;
+      if (nextRun && new Date(nextRun) > new Date()) {
+        const waitTime = new Date(nextRun) - new Date();
         await jobQueue.add(
-          { scheduledOrderId: o._id, userId: o.userId },
+          { scheduledOrderId: order._id, userId: order.userId },
           {
             delay: Math.max(0, waitTime),
             attempts: 3,
@@ -159,7 +154,7 @@ const startQueue = async () => {
               delay: 2000,
             },
             removeOnComplete: true,
-            jobId: `${o._id}-${Date.now()}`,
+            jobId: `${order._id}-${Date.now()}`,
           }
         );
       }
@@ -169,22 +164,22 @@ const startQueue = async () => {
   }
 };
 
-const addScheduleJob = async (ordr) => {
+const scheduleOrderJob = async (order) => {
   try {
-    const wait = new Date(ordr.scheduledTime) - new Date();
-    console.log(`Schedule: ${ordr._id} in ${wait}ms`);
+    const waitTime = new Date(order.scheduledTime) - new Date();
+    console.log(`Schedule: ${order._id} in ${waitTime}ms`);
 
     await jobQueue.add(
-      { scheduledOrderId: ordr._id, userId: ordr.userId },
+      { scheduledOrderId: order._id, userId: order.userId },
       {
-        delay: Math.max(0, wait),
+        delay: Math.max(0, waitTime),
         attempts: 3,
         backoff: {
           type: 'exponential',
           delay: 2000,
         },
         removeOnComplete: true,
-        jobId: `${ordr._id}-${Date.now()}`,
+        jobId: `${order._id}-${Date.now()}`,
       }
     );
 
@@ -195,13 +190,13 @@ const addScheduleJob = async (ordr) => {
   }
 };
 
-const stopJob = async (orderId) => {
+const cancelJob = async (orderId) => {
   try {
     const jobs = await jobQueue.getJobs('wait');
-    const j = jobs.find(x => x.data.scheduledOrderId.toString() === orderId.toString());
+    const job = jobs_list.find(x => x.data.scheduledOrderId.toString() === orderId.toString());
     
-    if (j) {
-      await j.remove();
+    if (job) {
+      await job.remove();
       console.log(`Job cancelled: ${orderId}`);
     }
   } catch (error) {
@@ -212,7 +207,7 @@ const stopJob = async (orderId) => {
 module.exports = {
   jobQueue,
   initQueue: startQueue,
-  scheduleOrderJob: addScheduleJob,
-  cancelJob: stopJob,
-  computeNextRun: calcNextRun,
+  scheduleOrderJob,
+  cancelJob,
+  computeNextRun: calculateNextRun,
 };

@@ -16,21 +16,22 @@ const orderValidation = Joi.object({
 });
 
 class UserController {
+  // show user dashboard with all orders and stats
   async userDashboard(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
       }
 
-      const ordrs = await ScheduledOrder.find({ userId: req.session.user.id }).sort({ createdAt: -1 });
-      const stts = {
-        total: ordrs.length,
-        active: ordrs.filter(o => o.status === 'active').length,
-        completed: ordrs.filter(o => o.status === 'completed').length,
-        paused: ordrs.filter(o => o.status === 'paused').length,
+      const all_orders = await ScheduledOrder.find({ userId: req.session.user.id }).sort({ createdAt: -1 });
+      const dashboard_stats = {
+        total: all_orders.length,
+        active: all_orders.filter(x => x.status === 'active').length,
+        done: all_orders.filter(x => x.status === 'completed').length,
+        paused: all_orders.filter(x => x.status === 'paused').length,
       };
 
-      res.render('user/dashboard', { orders: ordrs, stats: stts, user: req.session.user });
+      res.render('user/dashboard', { orders: all_orders, stats: dashboard_stats, user: req.session.user });
     } catch (err) {
       console.log(err);
       req.flash('error', 'Error loading dashboard');
@@ -38,6 +39,7 @@ class UserController {
     }
   }
 
+  // display form to create new order
   async displayAddForm(req, res) {
     try {
       if (!req.session.user) {
@@ -52,6 +54,7 @@ class UserController {
     }
   }
 
+  // create new scheduled order
   async addOrder(req, res) {
     try {
       if (!req.session.user) {
@@ -61,16 +64,15 @@ class UserController {
       const { error } = orderValidation.validate(req.body, { abortEarly: false });
 
       if (error) {
-        const errs = {};
-        error.details.forEach(err => {
-          errs[err.context.key] = err.message;
+        const err_list = {};
+        error.details.forEach(er => {
+          err_list[er.context.key] = er.message;
         });
-        return res.render('user/orders/add', { errors: errs, old: req.body, user: req.session.user });
+        return res.render('user/orders/add', { errors: err_list, old: req.body, user: req.session.user });
       }
 
-      // check scheduled time is not in past
-      const schTime = new Date(req.body.scheduledTime);
-      if (schTime <= new Date()) {
+      const schedTime = new Date(req.body.scheduledTime);
+      if (schedTime <= new Date()) {
         return res.render('user/orders/add', { 
           errors: { scheduledTime: 'Cannot schedule in the past' },
           old: req.body,
@@ -80,7 +82,8 @@ class UserController {
 
       const { productName, quantity, description, scheduledTime, recurrenceType, notes } = req.body;
 
-      const newOrdr = await ScheduledOrder.create({
+      // create new order in db
+      const new_order = await ScheduledOrder.create({
         userId: req.session.user.id,
         productName: productName || 'Standard Item',
         quantity: parseInt(quantity),
@@ -92,13 +95,11 @@ class UserController {
         notes,
       });
 
-      // schedule the job
-      await scheduleOrderJob(newOrdr);
+      await scheduleOrderJob(new_order);
 
-      // try to send email
-      const usrData = await User.findById(req.session.user.id);
+      const curr_user = await User.findById(req.session.user.id);
       try {
-        await sendConfirmation(usrData.email, newOrdr);
+        await sendConfirmation(curr_user.email, new_order);
       } catch (mailErr) {
         console.log('Mail error:', mailErr.message);
       }
@@ -112,8 +113,7 @@ class UserController {
       res.redirect('/user/orders/add');
     }
   }
-
-  async listOrders(req, res) {
+  // list all user orders  async listOrders(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
@@ -154,6 +154,7 @@ class UserController {
     }
   }
 
+  // update existing order
   async editOrder(req, res) {
     try {
       if (!req.session.user) {
@@ -163,40 +164,40 @@ class UserController {
       const { error } = orderValidation.validate(req.body, { abortEarly: false });
 
       if (error) {
-        const ord = await ScheduledOrder.findById(req.params.id);
-        const errMap = {};
+        const order_found = await ScheduledOrder.findById(req.params.id);
+        const edit_errors = {};
         error.details.forEach(err => {
-          errMap[err.context.key] = err.message;
+          edit_errors[err.context.key] = err.message;
         });
-        return res.render('user/orders/edit', { order: ord, errors: errMap, old: req.body, user: req.session.user });
+        return res.render('user/orders/edit', { order: order_found, errors: edit_errors, old: req.body, user: req.session.user });
       }
 
-      const ordrData = await ScheduledOrder.findOne({ 
+      const ordr = await ScheduledOrder.findOne({ 
         _id: req.params.id,
         userId: req.session.user.id 
       });
 
-      if (!ordrData) {
+      if (!ordr) {
         req.flash('error', 'Order not found');
         return res.redirect('/user/orders/list');
       }
 
       const { productName, quantity, description, scheduledTime, recurrenceType, notes } = req.body;
 
-      ordrData.productName = productName || ordrData.productName;
-      ordrData.quantity = parseInt(quantity);
-      ordrData.description = description;
-      ordrData.scheduledTime = scheduledTime;
-      ordrData.recurrenceType = recurrenceType;
-      ordrData.nextExecutionAt = scheduledTime;
-      ordrData.notes = notes;
-      ordrData.updatedAt = new Date();
+      // update order fields
+      ordr.productName = productName || ordr.productName;
+      ordr.quantity = parseInt(quantity);
+      ordr.description = description;
+      ordr.scheduledTime = scheduledTime;
+      ordr.recurrenceType = recurrenceType;
+      ordr.nextExecutionAt = scheduledTime;
+      ordr.notes = notes;
+      ordr.updatedAt = new Date();
 
-      await ordrData.save();
+      await ordr.save();
 
-      // reschedule job
-      await cancelJob(ordrData._id);
-      await scheduleOrderJob(ordrData);
+      await cancelJob(ordr._id);
+      await scheduleOrderJob(ordr);
 
       req.flash('success', 'Order updated successfully');
       res.redirect('/user/orders/list');
@@ -214,22 +215,20 @@ class UserController {
         return res.redirect('/auth/login');
       }
 
-      const o = await ScheduledOrder.findOne({ 
+const found_order = await ScheduledOrder.findOne({
         _id: req.params.id,
-        userId: req.session.user.id 
+        userId: req.session.user.id
       });
 
-      if (!o) {
-        req.flash('error', 'Order not found');
+      if (!found_order) {
+        req.flash('error', 'Order not found bruh');
         return res.redirect('/user/orders/list');
       }
 
-      // cancel the job
-      await cancelJob(o._id);
+      await cancelJob(found_order._id);
 
-      // mark as cancelled
-      o.status = 'cancelled';
-      await o.save();
+      found_order.status = 'cancelled';
+      await found_order.save();
 
       req.flash('success', 'Order cancelled successfully');
       res.redirect('/user/orders/list');
@@ -240,25 +239,24 @@ class UserController {
       res.redirect('/user/orders/list');
     }
   }
-
-  async pauseJob(req, res) {
+  // pause order execution  async pauseJob(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
       }
 
-      const o = await ScheduledOrder.findOne({ 
+      const paused_order = await ScheduledOrder.findOne({
         _id: req.params.id,
-        userId: req.session.user.id 
+        userId: req.session.user.id
       });
 
-      if (!o) {
+      if (!paused_order) {
         req.flash('error', 'Order not found');
         return res.redirect('/user/orders/list');
       }
 
-      o.status = 'paused';
-      await o.save();
+      paused_order.status = 'paused';
+      await paused_order.save();
       await cancelJob(o._id);
 
       req.flash('success', 'Order paused');
@@ -270,29 +268,28 @@ class UserController {
       res.redirect('/user/orders/list');
     }
   }
-
-  async startJob(req, res) {
+  // resume paused order  async startJob(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
       }
 
-      const o = await ScheduledOrder.findOne({ 
+      const resume_order = await ScheduledOrder.findOne({
         _id: req.params.id,
-        userId: req.session.user.id 
+        userId: req.session.user.id
       });
 
-      if (!o) {
+      if (!resume_order) {
         req.flash('error', 'Order not found');
         return res.redirect('/user/orders/list');
       }
 
-      o.status = 'active';
-      const nxtTime = o.nextExecutionAt || o.scheduledTime;
+      resume_order.status = 'active';
+      const nxt_time = resume_order.nextExecutionAt || resume_order.scheduledTime;
       
-      if (new Date(nxtTime) > new Date()) {
-        await o.save();
-        await scheduleOrderJob(o);
+      if (new Date(nxt_time) > new Date()) {
+        await resume_order.save();
+        await scheduleOrderJob(resume_order);
         req.flash('success', 'Order resumed');
       } else {
         req.flash('error', 'Cannot resume - time passed already');
@@ -306,22 +303,21 @@ class UserController {
       res.redirect('/user/orders/list');
     }
   }
-
-  async getHistory(req, res) {
+  // cancel/delete an order  async getHistory(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
       }
 
-      const orderId = req.params.id;
-      const executions = await OrderExecution.find({ scheduledOrderId: orderId })
+      const ord_id = req.params.id;
+      const exec_history = await OrderExecution.find({ scheduledOrderId: ord_id })
         .sort({ executedAt: -1 });
       
-      const order = await ScheduledOrder.findById(orderId);
+      const order_data = await ScheduledOrder.findById(ord_id);
 
       res.render('user/orders/executions', { 
-        executions, 
-        order,
+        executions: exec_history, 
+        order: order_data,
         user: req.session.user 
       });
 

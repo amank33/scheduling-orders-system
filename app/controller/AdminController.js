@@ -3,34 +3,36 @@ const ScheduledOrder = require('../model/scheduledOrder');
 const OrderExecution = require('../model/orderExecution');
 
 class AdminController {
+  // main admin dashboard with stats
   async adminDashboard(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
       }
 
-      const totUsr = await User.countDocuments();
-      const totOrds = await ScheduledOrder.countDocuments();
-      const totExec = await OrderExecution.countDocuments();
-      const sucExec = await OrderExecution.countDocuments({ status: 'success' });
-      const failExec = await OrderExecution.countDocuments({ status: 'failed' });
+      // get all the counts lol
+      const totalUsers = await User.countDocuments();
+      const total_orders = await ScheduledOrder.countDocuments();
+      const totalExec = await OrderExecution.countDocuments();
+      const successExec = await OrderExecution.countDocuments({ status: 'success' });
+      const failedExec = await OrderExecution.countDocuments({ status: 'failed' });
 
-      const recentExecs = await OrderExecution.find()
+      const recentRuns = await OrderExecution.find()
         .populate('userId', 'username email')
         .populate('scheduledOrderId', 'productName')
         .sort({ executedAt: -1 })
         .limit(10);
 
       const stats = {
-        totalUsers: totUsr,
-        totalOrders: totOrds,
-        totalExecutions: totExec,
-        successfulExecutions: sucExec,
-        failedExecutions: failExec,
-        successRate: totExec > 0 ? ((sucExec / totExec) * 100).toFixed(2) : 0,
+        total_users: totalUsers,
+        total_orders,
+        totalExecs: totalExec,
+        success: successExec,
+        failed: failedExec,
+        rate: totalExec > 0 ? ((successExec / totalExec) * 100).toFixed(2) : 0,
       };
 
-      res.render('admin/dashboard', { stats, recentExecutions: recentExecs, user: req.session.user });
+      res.render('admin/dashboard', { stats, recentExecutions: recentRuns, user: req.session.user });
     } catch (err) {
       console.log(err);
       req.flash('error', 'Dashboard error');
@@ -38,17 +40,18 @@ class AdminController {
     }
   }
 
+  // view all scheduled orders
   async viewOrders(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
       }
 
-      const ordrs = await ScheduledOrder.find()
+      const allOrders = await ScheduledOrder.find()
         .populate('userId', 'username email')
         .sort({ createdAt: -1 });
 
-      res.render('admin/orders/list', { orders: ordrs, user: req.session.user });
+      res.render('admin/orders/list', { orders: allOrders, user: req.session.user });
     } catch (err) {
       console.log(err);
       req.flash('error', 'Error loading orders');
@@ -56,30 +59,31 @@ class AdminController {
     }
   }
 
+  // view all order executions with pagination
   async viewExecutions(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
       }
 
-      const pg = parseInt(req.query.page) || 1;
-      const lmt = 20;
-      const skip = (pg - 1) * lmt;
+      const pageNum = parseInt(req.query.page) || 1;
+      const itemsPerPage = 20;
+      const skip = (pageNum - 1) * itemsPerPage;
 
-      const excs = await OrderExecution.find()
+      const exec_list = await OrderExecution.find()
         .populate('userId', 'username email')
         .populate('scheduledOrderId', 'productName')
         .sort({ executedAt: -1 })
         .skip(skip)
-        .limit(lmt);
+        .limit(itemsPerPage);
 
-      const tot = await OrderExecution.countDocuments();
-      const pgs = Math.ceil(tot / lmt);
+      const countAll = await OrderExecution.countDocuments();
+      const maxPages = Math.ceil(countAll / itemsPerPage);
 
       res.render('admin/executions/list', { 
-        executions: excs, 
-        page: pg, 
-        pages: pgs,
+        executions: exec_list, 
+        page: pageNum, 
+        pages: maxPages,
         user: req.session.user 
       });
     } catch (err) {
@@ -88,16 +92,15 @@ class AdminController {
       res.redirect('/admin/dashboard');
     }
   }
-
-  async viewUsers(req, res) {
+  // view all registered users  async viewUsers(req, res) {
     try {
       if (!req.session.user) {
         return res.redirect('/auth/login');
       }
 
-      const usrs = await User.find().sort({ createdAt: -1 });
+      const allUsers = await User.find().sort({ createdAt: -1 });
 
-      res.render('admin/users/list', { users: usrs, user: req.session.user });
+      res.render('admin/users/list', { users: allUsers, user: req.session.user });
     } catch (err) {
       console.log(err);
       req.flash('error', 'Error loading users');
@@ -111,16 +114,16 @@ class AdminController {
         return res.redirect('/auth/login');
       }
 
-      const usr = await User.findById(req.params.id);
-      if (!usr) {
+      const userData = await User.findById(req.params.id);
+      if (!userData) {
         req.flash('error', 'User not found');
         return res.redirect('/admin/users/list');
       }
 
-      const ordrs = await ScheduledOrder.find({ userId: usr._id }).sort({ createdAt: -1 });
-      const execs = await OrderExecution.find({ userId: usr._id }).sort({ executedAt: -1 });
+      const user_orders = await ScheduledOrder.find({ userId: userData._id }).sort({ createdAt: -1 });
+      const user_execs = await OrderExecution.find({ userId: userData._id }).sort({ executedAt: -1 });
 
-      res.render('admin/users/orders', { user: usr, orders: ordrs, executions: execs, sessionUser: req.session.user });
+      res.render('admin/users/orders', { user: userData, orders: user_orders, executions: user_execs, sessionUser: req.session.user });
     } catch (err) {
       console.log(err);
       req.flash('error', 'Error loading user orders');

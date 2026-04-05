@@ -1,11 +1,93 @@
+# Dependencies
 node_modules/
-.env
-.env.local
-.git/
-.gitkeep
-dist/
-build/
 package-lock.json
 yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitkeep
+
+# Documentation (AI-generated)
+*.md
+HOW_IT_WORKS.md
+NOTES.md
+QUICK_START.md
+README.md
+REFACTORING_CHECKLIST.md
+REFACTORING_LOG.md
+ROUTES.md
+SEED_DATA.md
+TEST_REPORT.md
+TESTING_SUMMARY.md
+Postman_Collection.json
+
+# Build & Distribution
 dist/
+build/
+out/
+*.tsbuildinfo
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.vim/
+.emacs.d/
+
+# OS Files
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+*.log
+logs/
+
+# Temp & Cache
+tmp/
+temp/
+cache/
+.cache/
+.parcel-cache/
+
+# npm/yarn
+.npm/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Runtime
+.node_repl_history
+
+# Uploads (local files)
+uploads/
+public/uploads/
+
+# PDFs and extracted files
+*.pdf
+pdf_content.txt
+extract_pdf*.js
+extract_pdf*.mjs
+
+# Vercel
+.vercel/
+
+# Local development
+.DS_Store
+*.pem
 

@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// Order execution/history model
-const execSchema = new Schema(
+// order execution schema - tracks each time an order runs
+const executionSchema = new Schema(
   {
     scheduledOrderId: {
       type: Schema.Types.ObjectId,
@@ -48,4 +48,4 @@ const execSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('OrderExecution', execSchema);
+module.exports = mongoose.model('OrderExecution', executionSchema);

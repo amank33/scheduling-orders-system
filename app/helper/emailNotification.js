@@ -17,33 +17,33 @@ const setupMail = () => {
   return mailerInstance;
 };
 
-// send notification when order is executed
-const notifyOrderExecution = async (userID, ordData, exc) => {
+// send email notification when order executes
+const notifyOrderExecution = async (user_id, order_obj, exec) => {
   try {
-    const ml = setupMail();
+    const smtp_serv = setupMail();
 
-    const mailOpts = {
+    const email_opts = {
       from: process.env.SMTP_USER,
-      to: `user${userID}@example.com`,
-      subject: `Order Executed - Order #${exc.executionDetails.orderId}`,
+      to: `user${user_id}@example.com`,
+      subject: `Order Executed - #${exec.executionDetails.orderId}`,
       html: `
-        <h2>Order Execution</h2>
-        <p><strong>Order ID:</strong> ${exc.executionDetails.orderId}</p>
-        <p><strong>Product:</strong> ${ordData.productName}</p>
-        <p><strong>Qty:</strong> ${ordData.quantity}</p>
-        <p><strong>Time:</strong> ${new Date(exc.executedAt).toLocaleString()}</p>
-        <p><strong>Total Runs:</strong> ${ordData.totalExecutions}</p>
-        <p>Your scheduled order has been processed.</p>
+        <h2>Order ran</h2>
+        <p><strong>Order ID:</strong> ${exec.executionDetails.orderId}</p>
+        <p><strong>Product:</strong> ${order_obj.productName}</p>
+        <p><strong>Qty:</strong> ${order_obj.quantity}</p>
+        <p><strong>When:</strong> ${new Date(exec.executedAt).toLocaleString()}</p>
+        <p><strong>Total Times Run:</strong> ${order_obj.totalExecutions}</p>
+        <p>Your order was processed.</p>
       `,
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('Email notification:', mailOpts);
+      console.log('Dev mode - email:', email_opts);
       return true;
     }
 
-    await ml.sendMail(mailOpts);
-    console.log(`Email sent for order ${exc._id}`);
+    await smtp_serv.sendMail(email_opts);
+    console.log(`Mail sent for order ${exec._id}`);
     return true;
 
   } catch (error) {
