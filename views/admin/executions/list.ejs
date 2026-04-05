@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executions - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .table-card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">📅 Scheduling Orders</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+                <a class="nav-link" href="/admin/users/list">Users</a>
+                <a class="nav-link" href="/admin/orders/list">Orders</a>
+                <a class="nav-link active" href="/admin/executions/list">Executions</a>
+                <a class="nav-link" href="/auth/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <h2 class="mb-4">All Order Executions</h2>
+
+        <div class="table-card">
+            <% if(executions && executions.length > 0) { %>
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Product</th>
+                                <th>Order ID</th>
+                                <th>Executed At</th>
+                                <th>Status</th>
+                                <th>Amount</th>
+                                <th>Notification</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% executions.forEach(exec => { %>
+                                <tr>
+                                    <td><%= exec.userId ? exec.userId.username : 'N/A' %></td>
+                                    <td><%= exec.scheduledOrderId ? exec.scheduledOrderId.productName : 'N/A' %></td>
+                                    <td><code><%= exec.executionDetails.orderId %></code></td>
+                                    <td><%= new Date(exec.executedAt).toLocaleString() %></td>
+                                    <td><span class="badge <%= exec.status === 'success' ? 'bg-success' : 'bg-danger' %>"><%= exec.status %></span></td>
+                                    <td>$<%= exec.executionDetails.amount %></td>
+                                    <td><span class="badge <%= exec.notificationSent ? 'bg-success' : 'bg-warning' %>"><%= exec.notificationSent ? 'Sent' : 'Pending' %></span></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <% for(let i = 1; i <= pages; i++) { %>
+                            <li class="page-item <%= page === i ? 'active' : '' %>">
+                                <a class="page-link" href="/admin/executions/list?page=<%= i %>"><%= i %></a>
+                            </li>
+                        <% } %>
+                    </ul>
+                </nav>
+            <% } else { %>
+                <div class="p-5 text-center">
+                    <p class="text-muted">No executions yet.</p>
+                </div>
+            <% } %>
+        </div>
+
+        <div class="mt-4">
+            <a href="/admin/dashboard" class="btn btn-outline-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

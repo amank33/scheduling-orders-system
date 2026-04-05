@@ -1,0 +1,159 @@
+const User = require('../model/user');
+const Joi = require('joi');
+
+// validation schemas
+const regSchema = Joi.object({
+  username: Joi.string().min(3).max(30).required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required(),
+  fullName: Joi.string().max(100).optional(),
+  phone: Joi.string().optional(),
+});
+
+const logSchema = Joi.object({
+  username: Joi.string().required(),
+  password: Joi.string().required(),
+});
+
+class AuthController {
+  async displayLogin(req, res) {
+    try {
+      res.render('auth/login', { errors: null });
+    } catch (err) {
+      console.log(err);
+      req.flash('error', 'Error loading login page');
+      res.redirect('/');
+    }
+  }
+
+  async loginUser(req, res) {
+    try {
+      const { username, password } = req.body;
+      const { error } = logSchema.validate({ username, password }, { abortEarly: false });
+
+      if (error) {
+        const errs = {};
+        error.details.forEach(err => {
+          errs[err.context.key] = err.message;
+        });
+        return res.render('auth/login', { errors: errs });
+      }
+
+      // find user
+      const usr = await User.findOne({ 
+        $or: [{ username }, { email: username }] 
+      });
+
+      if (!usr || usr.password !== password) {
+        return res.render('auth/login', { 
+          errors: { password: 'Wrong credentials' }
+        });
+      }
+
+      if (!usr.isActive) {
+        return res.render('auth/login', { 
+          errors: { username: 'Account disabled' }
+        });
+      }
+
+      // login ok
+      req.session.user = {
+        id: usr._id,
+        username: usr.username,
+        email: usr.email,
+        fullName: usr.fullName,
+      };
+
+      req.flash('success', `Welcome ${usr.username}!`);
+      res.redirect('/user/dashboard');
+
+    } catch (err) {
+      console.log(err);
+      req.flash('error', 'Login error');
+      res.redirect('/auth/login');
+    }
+  }
+
+  async displayRegister(req, res) {
+    try {
+      res.render('auth/register', { errors: null, old: {} });
+    } catch (err) {
+      console.log(err);
+      req.flash('error', 'Error loading register page');
+      res.redirect('/');
+    }
+  }
+
+  async registerUser(req, res) {
+    try {
+      const { username, email, password, fullName, phone } = req.body;
+      const { error } = regSchema.validate(req.body, { abortEarly: false });
+
+      if (error) {
+        const errs = {};
+        error.details.forEach(err => {
+          errs[err.context.key] = err.message;
+        });
+        return res.render('auth/register', { errors: errs, old: req.body });
+      }
+
+      // check existing user
+      const exstg = await User.findOne({ 
+        $or: [{ username }, { email }] 
+      });
+
+      if (exstg) {
+        const errs = {};
+        if (exstg.username === username) {
+          errs.username = 'username taken';
+        }
+        if (exstg.email === email) {
+          errs.email = 'Email already used';
+        }
+        return res.render('auth/register', { errors: errs, old: req.body });
+      }
+
+      // create user
+      const newUsr = await User.create({
+        username,
+        email,
+        password,
+        fullName: fullName || username,
+        phone: phone || '',
+      });
+
+      // auto login
+      req.session.user = {
+        id: newUsr._id,
+        username: newUsr.username,
+        email: newUsr.email,
+        fullName: newUsr.fullName,
+      };
+
+      req.flash('success', 'Account created!');
+      res.redirect('/user/dashboard');
+
+    } catch (err) {
+      console.log(err);
+      req.flash('error', 'Registration error');
+      res.redirect('/auth/register');
+    }
+  }
+
+  async logoutUser(req, res) {
+    try {
+      req.session.destroy((err) => {
+        if (err) {
+          return res.redirect('/user/dashboard');
+        }
+        req.flash('success', 'Logged out successfully');
+        res.redirect('/');
+      });
+    } catch (err) {
+      console.log(err);
+      res.redirect('/');
+    }
+  }
+}
+
+module.exports = new AuthController();

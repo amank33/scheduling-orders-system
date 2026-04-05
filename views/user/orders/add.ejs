@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Order - Scheduling Orders System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .form-section { background: white; border-radius: 10px; padding: 30px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
+        .error-text { color: #dc3545; font-size: 0.875rem; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">📅 Scheduling Orders</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/user/dashboard">Dashboard</a>
+                <a class="nav-link" href="/user/orders/list">My Orders</a>
+                <a class="nav-link" href="/auth/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <h2 class="mb-4">Create New Scheduled Order</h2>
+
+        <div class="form-section">
+            <form method="POST" action="/user/orders/create">
+                <div class="mb-3">
+                    <label for="productName" class="form-label">Product Name</label>
+                    <input type="text" class="form-control" id="productName" name="productName" placeholder="e.g., Coffee Subscription" value="<%= old && old.productName ? old.productName : '' %>">
+                    <% if(errors && errors.productName) { %>
+                        <div class="error-text"><%= errors.productName %></div>
+                    <% } %>
+                </div>
+
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" value="<%= old && old.quantity ? old.quantity : '1' %>" required>
+                    <% if(errors && errors.quantity) { %>
+                        <div class="error-text"><%= errors.quantity %></div>
+                    <% } %>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" placeholder="Order details..."><%= old && old.description ? old.description : '' %></textarea>
+                    <% if(errors && errors.description) { %>
+                        <div class="error-text"><%= errors.description %></div>
+                    <% } %>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="scheduledTime" class="form-label">Schedule Time <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" id="scheduledTime" name="scheduledTime" value="<%= old && old.scheduledTime ? old.scheduledTime : '' %>" required>
+                        <% if(errors && errors.scheduledTime) { %>
+                            <div class="error-text"><%= errors.scheduledTime %></div>
+                        <% } %>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="recurrenceType" class="form-label">Recurrence Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="recurrenceType" name="recurrenceType" required>
+                            <option value="once" <%= old && old.recurrenceType === 'once' ? 'selected' : '' %>>Once</option>
+                            <option value="daily" <%= old && old.recurrenceType === 'daily' ? 'selected' : '' %>>Daily</option>
+                            <option value="weekly" <%= old && old.recurrenceType === 'weekly' ? 'selected' : '' %>>Weekly</option>
+                            <option value="monthly" <%= old && old.recurrenceType === 'monthly' ? 'selected' : '' %>>Monthly</option>
+                        </select>
+                        <% if(errors && errors.recurrenceType) { %>
+                            <div class="error-text"><%= errors.recurrenceType %></div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notes (optional)</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Additional notes..."><%= old && old.notes ? old.notes : '' %></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Create Order</button>
+                    <a href="/user/orders/list" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

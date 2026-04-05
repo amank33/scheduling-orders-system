@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Scheduling Orders System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .stat-card { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .stat-card h3 { color: #667eea; font-weight: 700; font-size: 2rem; }
+        .table-card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+        .badge-success { background-color: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">📅 Scheduling Orders</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link active" href="/admin/dashboard">Dashboard</a>
+                <a class="nav-link" href="/admin/users/list">Users</a>
+                <a class="nav-link" href="/admin/orders/list">Orders</a>
+                <a class="nav-link" href="/admin/executions/list">Executions</a>
+                <a class="nav-link" href="/auth/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <h1 class="mb-4">Admin Dashboard</h1>
+
+        <% if(success_msg && success_msg.length > 0) { %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <%= success_msg %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+
+        <div class="row mb-4">
+            <div class="col-md-2 mb-3">
+                <div class="stat-card">
+                    <h3><%= stats.totalUsers %></h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="stat-card">
+                    <h3><%= stats.totalOrders %></h3>
+                    <p>Total Orders</p>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="stat-card">
+                    <h3><%= stats.totalExecutions %></h3>
+                    <p>Total Executions</p>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="stat-card">
+                    <h3><span class="text-success"><%= stats.successfulExecutions %></span></h3>
+                    <p>Successful</p>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="stat-card">
+                    <h3><span class="text-danger"><%= stats.failedExecutions %></span></h3>
+                    <p>Failed</p>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="stat-card">
+                    <h3><%= stats.successRate %>%</h3>
+                    <p>Success Rate</p>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="mt-5 mb-3">Recent Executions</h3>
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>User</th>
+                            <th>Product</th>
+                            <th>Order ID</th>
+                            <th>Executed At</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% recentExecutions.forEach(exec => { %>
+                            <tr>
+                                <td><%= exec.userId ? exec.userId.username : 'Unknown' %></td>
+                                <td><%= exec.scheduledOrderId ? exec.scheduledOrderId.productName : 'N/A' %></td>
+                                <td><code><%= exec.executionDetails.orderId %></code></td>
+                                <td><%= new Date(exec.executedAt).toLocaleString() %></td>
+                                <td>
+                                    <span class="badge <%= exec.status === 'success' ? 'bg-success' : 'bg-danger' %>">
+                                        <%= exec.status.toUpperCase() %>
+                                    </span>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="/admin/orders/list" class="btn btn-primary">View All Orders</a>
+            <a href="/admin/executions/list" class="btn btn-primary">View All Executions</a>
+            <a href="/admin/users/list" class="btn btn-primary">Manage Users</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

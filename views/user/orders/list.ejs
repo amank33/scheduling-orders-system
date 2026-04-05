@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - Scheduling Orders System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .table-card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .badge-active { background-color: #d4edda; color: #155724; }
+        .badge-paused { background-color: #fff3cd; color: #856404; }
+        .badge-completed { background-color: #d1ecf1; color: #0c5460; }
+        .badge-cancelled { background-color: #f8d7da; color: #721c24; }
+        .btn-sm { padding: 5px 10px; font-size: 0.875rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">📅 Scheduling Orders</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/user/dashboard">Dashboard</a>
+                <a class="nav-link active" href="/user/orders/list">My Orders</a>
+                <a class="nav-link" href="/user/orders/add">New Order</a>
+                <a class="nav-link" href="/auth/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>My Scheduled Orders</h2>
+            <a href="/user/orders/add" class="btn btn-primary">+ New Order</a>
+        </div>
+
+        <% if(success_msg && success_msg.length > 0) { %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <%= success_msg %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+
+        <% if(error_msg && error_msg.length > 0) { %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <%= error_msg %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+
+        <div class="table-card">
+            <% if(orders && orders.length > 0) { %>
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Schedule</th>
+                                <th>Recurrence</th>
+                                <th>Status</th>
+                                <th>Total Executions</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% orders.forEach(order => { %>
+                                <tr>
+                                    <td><strong><%= order.productName || 'Standard Item' %></strong></td>
+                                    <td><%= order.quantity %></td>
+                                    <td><%= new Date(order.scheduledTime).toLocaleString() %></td>
+                                    <td><span class="badge bg-info"><%= order.recurrenceType %></span></td>
+                                    <td>
+                                        <span class="status-badge badge-<%= order.status %>">
+                                            <%= order.status.charAt(0).toUpperCase() + order.status.slice(1) %>
+                                        </span>
+                                    </td>
+                                    <td><%= order.totalExecutions %></td>
+                                    <td>
+                                        <a href="/user/orders/<%= order._id %>/executions" class="btn btn-sm btn-info">View</a>
+                                        <a href="/user/orders/edit/<%= order._id %>" class="btn btn-sm btn-warning">Edit</a>
+                                        <% if(order.status === 'active') { %>
+                                            <a href="/user/orders/pause/<%= order._id %>" class="btn btn-sm btn-secondary" onclick="return confirm('Pause this order?')">Pause</a>
+                                        <% } else if(order.status === 'paused') { %>
+                                            <a href="/user/orders/resume/<%= order._id %>" class="btn btn-sm btn-success">Resume</a>
+                                        <% } %>
+                                        <a href="/user/orders/delete/<%= order._id %>" class="btn btn-sm btn-danger" onclick="return confirm('Cancel this order?')">Cancel</a>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="p-5 text-center">
+                    <p class="text-muted">No scheduled orders yet. <a href="/user/orders/add">Create one now!</a></p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

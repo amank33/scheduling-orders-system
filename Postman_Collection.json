@@ -1,0 +1,125 @@
+{
+	"info": {
+		"name": "Scheduling Orders System",
+		"description": "API collection for testing the Scheduling Orders System",
+		"version": "1.0.0"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/x-www-form-urlencoded"}],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "username", "value": "testuser"},
+								{"key": "email", "value": "test@example.com"},
+								{"key": "password", "value": "password123"},
+								{"key": "fullName", "value": "Test User"},
+								{"key": "phone", "value": "1234567890"}
+							]
+						},
+						"url": {"raw": "http://localhost:4007/auth/register", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["auth", "register"]}
+					}
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/x-www-form-urlencoded"}],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "username", "value": "testuser"},
+								{"key": "password", "value": "password123"}
+							]
+						},
+						"url": {"raw": "http://localhost:4007/auth/login", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["auth", "login"]}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:4007/auth/logout", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["auth", "logout"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "User Orders",
+			"item": [
+				{
+					"name": "Create Order",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/x-www-form-urlencoded"}],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "productName", "value": "Coffee Subscription"},
+								{"key": "quantity", "value": "2"},
+								{"key": "description", "value": "Daily coffee order"},
+								{"key": "scheduledTime", "value": "2026-04-07T10:00:00"},
+								{"key": "recurrenceType", "value": "daily"},
+								{"key": "notes", "value": "Morning delivery preferred"}
+							]
+						},
+						"url": {"raw": "http://localhost:4007/user/orders/create", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["user", "orders", "create"]}
+					}
+				},
+				{
+					"name": "List Orders",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:4007/user/orders/list", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["user", "orders", "list"]}
+					}
+				},
+				{
+					"name": "View Execution History",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:4007/user/orders/{order_id}/executions", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["user", "orders", "{order_id}", "executions"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Admin Dashboard",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:4007/admin/dashboard", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["admin", "dashboard"]}
+					}
+				},
+				{
+					"name": "All Orders",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:4007/admin/orders/list", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["admin", "orders", "list"]}
+					}
+				},
+				{
+					"name": "All Executions",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:4007/admin/executions/list", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["admin", "executions", "list"]}
+					}
+				},
+				{
+					"name": "All Users",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:4007/admin/users/list", "protocol": "http", "host": ["localhost"], "port": "4007", "path": ["admin", "users", "list"]}
+					}
+				}
+			]
+		}
+	]
+}
